@@ -26,6 +26,7 @@ Requires macOS 13 or later on Apple silicon.
 | R2 / L2 | Hold for faster / more precise movement |
 | Left stick flick | On a button: jump to the next button in that direction |
 | Right stick | Scroll; keep holding it to scroll faster |
+| Right stick double flick up / down | Jump to the top / bottom of the page |
 | ✕ Cross | Left click (hold to drag, double-tap to double-click) |
 | ○ Circle | Right click |
 | □ Square | Delete (repeats while held) |

@@ -282,6 +282,8 @@ final class Engine {
         case .arrowDown: key(125)
         case .arrowLeft: key(123)
         case .arrowRight: key(124)
+        case .scrollToTop: scrollToEnd(up: true)
+        case .scrollToBottom: scrollToEnd(up: false)
         case .shortcut: key(CGKeyCode(a.keyCode), CGEventFlags(rawValue: a.flags))
         case .holdKey: holdKey(a, down: true)
         case .togglePause: DispatchQueue.main.async { Store.shared.paused.toggle() }
@@ -402,7 +404,7 @@ final class Engine {
         case .touchpadPress: (g as? GCDualSenseGamepad)?.touchpadButton.isPressed ?? false
         case .options: g.buttonMenu.isPressed
         case .create: g.buttonOptions?.isPressed ?? false
-        case .swipeLeft, .swipeRight, .swipeUp, .swipeDown: false
+        case .swipeLeft, .swipeRight, .swipeUp, .swipeDown, .rightDoubleUp, .rightDoubleDown: false
         }
     }
 
@@ -439,7 +441,54 @@ final class Engine {
 
     /// Right stick scrolling. Holding the stick in one direction speeds scrolling up over
     /// `scrollAccelTime` until it reaches `scrollAccel` times the base speed.
+    /// Scrolls the view under the cursor all the way to its top or bottom with a few very large
+    /// scroll events. Unlike ⌘↑/⌘↓ this never moves a text cursor and works in any scroll view.
+    private func scrollToEnd(up: Bool) {
+        let delta: Int32 = up ? 30000 : -30000
+        for _ in 0..<6 {
+            CGEvent(scrollWheelEvent2Source: source, units: .pixel, wheelCount: 1,
+                    wheel1: delta, wheel2: 0, wheel3: 0)?.post(tap: .cghidEventTap)
+        }
+        scrollRemainder = .zero
+        invalidateButtons()
+    }
+
+    // Right stick double flick: two quick up (or down) flicks within doubleFlickWindow.
+    private let doubleFlickWindow = 0.45
+    private var rFlickArmed = true
+    private var rRiseStart: Date?
+    private var rWasLow = true
+    private var lastRFlick: (up: Bool, at: Date)?
+
+    private func rightFlicks(_ g: GCExtendedGamepad, now: Date) {
+        let x = g.rightThumbstick.xAxis.value, y = g.rightThumbstick.yAxis.value
+        let raw = hypot(x, y)
+        if raw < flickLow {
+            rFlickArmed = true
+            rRiseStart = nil
+        } else if rWasLow {
+            rRiseStart = now
+        }
+        rWasLow = raw < flickLow
+        guard rFlickArmed, abs(y) >= flickHigh, abs(y) > abs(x) * 2,
+              let rs = rRiseStart, now.timeIntervalSince(rs) <= flickRise * 1.5 else {
+            if rFlickArmed, raw >= flickLow, let rs = rRiseStart, now.timeIntervalSince(rs) > flickRise * 1.5 {
+                rFlickArmed = false   // a slow push is plain scrolling
+            }
+            return
+        }
+        rFlickArmed = false
+        let up = y > 0
+        if let last = lastRFlick, last.up == up, now.timeIntervalSince(last.at) <= doubleFlickWindow {
+            lastRFlick = nil
+            tap(settings.action(for: up ? .rightDoubleUp : .rightDoubleDown))
+        } else {
+            lastRFlick = (up, now)
+        }
+    }
+
     private func scroll(_ g: GCExtendedGamepad, now: Date) {
+        rightFlicks(g, now: now)
         let vy = shape(g.rightThumbstick.yAxis.value), vx = shape(g.rightThumbstick.xAxis.value)
         if vx == 0 && vy == 0 {
             scrollSince = nil
