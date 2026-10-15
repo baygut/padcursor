@@ -39,7 +39,9 @@ Requires macOS 13 or later on Apple silicon.
 | Touchpad swipe left / right | Next / previous Space |
 | Touchpad swipe up / down | Mission Control / App Exposé |
 | Touchpad press and hold | Push to talk: holds fn (for dictation apps such as Wispr Flow) |
-| Options | Magnet on / off |
+| L2 hold + tilt the controller | Gyro aim: fine cursor movement |
+| Options tap / hold + roll the controller | Magnet on / off / volume up and down, like a knob |
+| Shake the controller | Press Return (off by default, turn on in the menu) |
 | Create | Quit |
 
 Every button can be remapped in **Settings…** from the menu bar icon: pick a built-in action, record any keyboard shortcut, or choose a key to hold for push to talk.

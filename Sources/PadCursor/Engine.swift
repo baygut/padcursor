@@ -111,6 +111,7 @@ final class Engine {
         guard let g = c.extendedGamepad else { return }
         controller = c
         pad = g
+        if let m = c.motion, m.sensorsRequireManualActivation { m.sensorsActive = true }
         setLight()
         onStatus?(c.vendorName ?? "Controller")
     }
@@ -328,6 +329,67 @@ final class Engine {
 
     private var switcherControl: Control?
 
+    // MARK: motion
+
+    private var rollAccum = 0.0
+    private var optionsUsed = false
+    private var lastShake = Date.distantPast
+    private var gyroRemainder = CGPoint.zero
+    private let volumeStep = 0.17   // rad of roll (about 10 degrees) per volume step
+
+    /// Options: a tap runs its action (magnet on/off by default); held, rolling the controller
+    /// turns the volume up or down like a knob.
+    private func optionsButton(_ g: GCExtendedGamepad) {
+        let held = g.buttonMenu.isPressed
+        let e = edge(Control.options.rawValue, held)
+        if e.down { optionsUsed = false; rollAccum = 0 }
+        if e.up && !optionsUsed { tap(settings.action(for: .options)) }
+        guard held, settings.tiltVolume, let m = controller?.motion, m.hasRotationRate else { return }
+        rollAccum += m.rotationRate.z * dt
+        while abs(rollAccum) >= volumeStep {
+            let up = rollAccum < 0   // rolling clockwise (right side down) turns it up
+            mediaKey(up ? 0 : 1)
+            rollAccum += up ? volumeStep : -volumeStep
+            optionsUsed = true
+        }
+    }
+
+    /// Hold L2 and tilt to move the cursor (gyro aim); shake to press Return.
+    private func motion(_ g: GCExtendedGamepad, now: Date) {
+        guard let m = controller?.motion else { return }
+        if settings.gyroAim, m.hasRotationRate, g.leftTrigger.value > 0.2, glideTarget == nil {
+            let r = m.rotationRate
+            func dead(_ v: Double) -> Double { abs(v) < 0.03 ? 0 : v }   // ignore hand tremor and drift
+            let sx = settings.gyroInvertX ? 1.0 : -1.0, sy = settings.gyroInvertY ? 1.0 : -1.0
+            gyroRemainder.x += sx * dead(r.y) * settings.gyroSpeed * dt
+            gyroRemainder.y += sy * dead(r.x) * settings.gyroSpeed * dt
+            if abs(gyroRemainder.x) >= 0.25 || abs(gyroRemainder.y) >= 0.25 {
+                moveCursor(to: CGPoint(x: pos.x + gyroRemainder.x, y: pos.y + gyroRemainder.y))
+                gyroRemainder = .zero
+            }
+        } else {
+            gyroRemainder = .zero
+        }
+        if settings.shakeEnter {
+            let a = m.acceleration
+            let g = sqrt(a.x * a.x + a.y * a.y + a.z * a.z)
+            if g >= settings.shakeThreshold, now.timeIntervalSince(lastShake) > 1.0 {
+                lastShake = now
+                key(36)   // Return
+            }
+        }
+    }
+
+    /// Volume keys (NX_KEYTYPE_SOUND_UP = 0, SOUND_DOWN = 1), so macOS shows its volume HUD.
+    private func mediaKey(_ k: Int) {
+        for down in [true, false] {
+            let data1 = (k << 16) | ((down ? 0xA : 0xB) << 8)
+            NSEvent.otherEvent(with: .systemDefined, location: .zero, modifierFlags: NSEvent.ModifierFlags(rawValue: down ? 0xA00 : 0xB00),
+                               timestamp: 0, windowNumber: 0, context: nil, subtype: 8, data1: data1, data2: -1)?
+                .cgEvent?.post(tap: .cghidEventTap)
+        }
+    }
+
     private func endSwitcher() {
         guard switcherControl != nil else { return }
         postKey(55, down: false, flags: [])
@@ -412,7 +474,7 @@ final class Engine {
             shoulder(.r1, r1, mode: settings.r1Hold)
         }
 
-        for c in [Control.cross, .circle, .square, .triangle, .l3, .dpadUp, .dpadDown, .dpadLeft, .dpadRight, .options, .create] {
+        for c in [Control.cross, .circle, .square, .triangle, .l3, .dpadUp, .dpadDown, .dpadLeft, .dpadRight, .create] {
             handle(c, isPressed(c, g))
         }
 
@@ -422,6 +484,8 @@ final class Engine {
             _ = a
         }
 
+        optionsButton(g)
+        motion(g, now: now)
         scroll(g, now: now)
         touchpad(g)
     }

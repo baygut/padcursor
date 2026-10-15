@@ -139,6 +139,19 @@ struct MovementTab: View {
                 slider("Time to full speed", $store.settings.scrollAccelTime, 0.2...4, "%.1f s")
                 Toggle("Invert direction", isOn: $store.settings.invertScroll)
             }
+            Section("Motion (DualSense gyroscope)") {
+                Toggle("Hold L2 and tilt to aim the cursor", isOn: $store.settings.gyroAim)
+                slider("Aim speed", $store.settings.gyroSpeed, 200...3000, "%.0f")
+                    .disabled(!store.settings.gyroAim)
+                Toggle("Invert left / right", isOn: $store.settings.gyroInvertX)
+                    .disabled(!store.settings.gyroAim)
+                Toggle("Invert up / down", isOn: $store.settings.gyroInvertY)
+                    .disabled(!store.settings.gyroAim)
+                Toggle("Hold Options and roll the controller for volume", isOn: $store.settings.tiltVolume)
+                Toggle("Shake to press Return", isOn: $store.settings.shakeEnter)
+                slider("Shake strength needed", $store.settings.shakeThreshold, 1.6...4.5, "%.1f g")
+                    .disabled(!store.settings.shakeEnter)
+            }
             Section("Magnet") {
                 Toggle("Sticky buttons", isOn: $store.settings.magnet)
                 slider("Stickiness", $store.settings.magnetStrength, 0...0.9, "%.2f")

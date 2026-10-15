@@ -59,6 +59,7 @@ struct MenuContent: View {
         Toggle("Magnet (sticky buttons)", isOn: $store.settings.magnet)
         Toggle("Flick to next button", isOn: $store.settings.flick)
             .disabled(!store.settings.magnet)
+        Toggle("Shake to Press Return", isOn: $store.settings.shakeEnter)
         Toggle("Light bar", isOn: $store.settings.lightOn)
         Divider()
         Toggle("Launch at Login", isOn: Binding(

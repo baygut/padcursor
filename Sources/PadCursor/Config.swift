@@ -131,6 +131,15 @@ struct Settings: Codable, Equatable {
     var flick = true
     var snapRange = 320.0
 
+    // Motion (gyroscope and accelerometer)
+    var gyroAim = true            // hold L2 and tilt to nudge the cursor
+    var gyroSpeed = 900.0         // px per radian of tilt
+    var gyroInvertX = false
+    var gyroInvertY = false
+    var tiltVolume = true         // hold Options and roll the controller to change the volume
+    var shakeEnter = false        // shake the controller to press Return
+    var shakeThreshold = 2.6      // g of acceleration that counts as a shake
+
     var lightOn = true
     var lightColor = RGB(r: 0, g: 0.4, b: 1)          // normal
     var lightMagnetOff = RGB(r: 0.6, g: 0, b: 1)      // magnet turned off
@@ -187,6 +196,13 @@ struct Settings: Codable, Equatable {
         lightColor = try c.decodeIfPresent(RGB.self, forKey: .lightColor) ?? d.lightColor
         lightMagnetOff = try c.decodeIfPresent(RGB.self, forKey: .lightMagnetOff) ?? d.lightMagnetOff
         lightPaused = try c.decodeIfPresent(RGB.self, forKey: .lightPaused) ?? d.lightPaused
+        gyroAim = try c.decodeIfPresent(Bool.self, forKey: .gyroAim) ?? d.gyroAim
+        gyroSpeed = try c.decodeIfPresent(Double.self, forKey: .gyroSpeed) ?? d.gyroSpeed
+        gyroInvertX = try c.decodeIfPresent(Bool.self, forKey: .gyroInvertX) ?? d.gyroInvertX
+        gyroInvertY = try c.decodeIfPresent(Bool.self, forKey: .gyroInvertY) ?? d.gyroInvertY
+        tiltVolume = try c.decodeIfPresent(Bool.self, forKey: .tiltVolume) ?? d.tiltVolume
+        shakeEnter = try c.decodeIfPresent(Bool.self, forKey: .shakeEnter) ?? d.shakeEnter
+        shakeThreshold = try c.decodeIfPresent(Double.self, forKey: .shakeThreshold) ?? d.shakeThreshold
     }
 }
 
