@@ -60,6 +60,10 @@ PadCursor finds buttons through the macOS Accessibility API in the background, s
 - **Light:** the controller's light bar color for normal, magnet off and paused, or turn it off.
 - **Launch at Login** is in the menu.
 
+## Updates
+
+PadCursor checks this repository's latest release once a day and offers to install a newer version. **Check for Updates…** in the menu checks right away. An update is installed only when it is signed by the same developer, and the app restarts on its own; the Accessibility permission carries over.
+
 ## Build from source
 
 ```bash

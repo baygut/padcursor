@@ -132,14 +132,31 @@ final class Engine {
         setLight()
     }
 
+    private var lightWasOff = false
+    private var lastLightWrite = Date.distantPast
+
+    /// Sets the light bar. After the light was off, the controller can ignore a single color
+    /// write, so turning it back on writes a nudge color first and the target again shortly
+    /// after; the tick also re-asserts the color every few seconds.
     private func setLight() {
         guard let light = controller?.light else { return }
+        lastLightWrite = Date()
         guard settings.lightOn else {
             light.color = GCColor(red: 0, green: 0, blue: 0)
+            lightWasOff = true
             return
         }
         let c = paused ? settings.lightPaused : settings.magnet ? settings.lightColor : settings.lightMagnetOff
-        light.color = GCColor(red: Float(c.r), green: Float(c.g), blue: Float(c.b))
+        let target = GCColor(red: Float(c.r), green: Float(c.g), blue: Float(c.b))
+        if lightWasOff {
+            lightWasOff = false
+            light.color = GCColor(red: 0.02, green: 0.02, blue: 0.02)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { [weak self] in
+                guard let self, self.settings.lightOn else { return }
+                self.controller?.light?.color = target
+            }
+        }
+        light.color = target
     }
 
     // MARK: events
@@ -330,6 +347,7 @@ final class Engine {
     private func tick() {
         guard let g = pad else { return }
         let now = Date()
+        if now.timeIntervalSince(lastLightWrite) > 3 { setLight() }
 
         if paused {
             // Only the pause binding works while paused.

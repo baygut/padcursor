@@ -30,6 +30,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         engine.apply(store.settings)
         store.launchAtLogin = SMAppService.mainApp.status == .enabled
         engine.start()
+        Updater.shared.checkInBackground()
         store.trusted = AXIsProcessTrustedWithOptions(
             [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary)
         // Re-check the permission until it is granted, so the menu updates without a restart.
@@ -43,6 +44,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 struct MenuContent: View {
     @ObservedObject var store: Store
+    @ObservedObject var updater = Updater.shared
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
@@ -69,12 +71,20 @@ struct MenuContent: View {
                 }
                 store.launchAtLogin = SMAppService.mainApp.status == .enabled
             }))
+        if let rel = updater.available {
+            Button("Install Update \(rel.version)…") { updater.offer(rel) }
+        }
+        Button(updater.busy ? "Checking for Updates…" : "Check for Updates…") {
+            updater.check(userInitiated: true)
+        }
+        .disabled(updater.busy)
         Button("Settings…") {
             openWindow(id: "settings")
             NSApp.activate(ignoringOtherApps: true)
         }
         .keyboardShortcut(",")
         Divider()
+        Text("Version \(updater.currentVersion)")
         Button("Quit PadCursor") { NSApp.terminate(nil) }
             .keyboardShortcut("q")
     }
