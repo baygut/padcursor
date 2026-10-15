@@ -47,6 +47,7 @@ enum ActionKind: String, CaseIterable, Codable, Identifiable {
     case missionControl, appExpose, nextSpace, previousSpace
     case arrowUp, arrowDown, arrowLeft, arrowRight
     case scrollToTop, scrollToBottom
+    case appSwitcher
     case shortcut, holdKey
     case togglePause, toggleMagnet, quit
 
@@ -72,6 +73,7 @@ enum ActionKind: String, CaseIterable, Codable, Identifiable {
         case .arrowRight: "Arrow right"
         case .scrollToTop: "Scroll to the top"
         case .scrollToBottom: "Scroll to the bottom"
+        case .appSwitcher: "App switcher (hold, tap R1 / L1 to step)"
         case .shortcut: "Keyboard shortcut…"
         case .holdKey: "Hold a key (push to talk)…"
         case .togglePause: "Pause / resume"
@@ -138,7 +140,7 @@ struct Settings: Codable, Equatable {
         .cross: .of(.leftClick),
         .circle: .of(.rightClick),
         .square: .of(.delete),
-        .triangle: .of(.togglePause),
+        .triangle: .of(.appSwitcher),
         .l1: .of(.back),
         .r1: .of(.forward),
         .l3: .of(.middleClick),
@@ -212,6 +214,11 @@ final class Store: ObservableObject {
             var merged = s
             for c in Control.allCases where merged.bindings[c] == nil {
                 merged.bindings[c] = Settings.defaults.bindings[c]
+            }
+            // 1.3: Triangle moved from Pause (now only in the menu) to the app switcher.
+            if !UserDefaults.standard.bool(forKey: "migrated.1.3") {
+                if merged.bindings[.triangle]?.kind == .togglePause { merged.bindings[.triangle] = .of(.appSwitcher) }
+                UserDefaults.standard.set(true, forKey: "migrated.1.3")
             }
             settings = merged
         } else {

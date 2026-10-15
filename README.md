@@ -30,7 +30,7 @@ Requires macOS 13 or later on Apple silicon.
 | ✕ Cross | Left click (hold to drag, double-tap to double-click) |
 | ○ Circle | Right click |
 | □ Square | Delete (repeats while held) |
-| △ Triangle | Pause / resume |
+| △ Triangle hold + R1 / L1 | App switcher: hold △ like ⌘, tap R1 / L1 to step forward / back, let go to switch (a quick tap returns to the previous app) |
 | L3 | Middle click |
 | R3 tap | Spotlight (⌘Space) |
 | D-pad | Arrow keys |
@@ -59,7 +59,7 @@ PadCursor finds buttons through the macOS Accessibility API in the background, s
 - **Buttons:** remap every button, swipe and the L1/R1 hold modes.
 - **Movement:** cursor speed, R2 boost, L2 precision, dead zone, scroll speed and acceleration, magnet strength and flick range.
 - **Light:** the controller's light bar color for normal, magnet off and paused, or turn it off.
-- **Launch at Login** is in the menu.
+- **Pause** and **Launch at Login** are in the menu.
 
 ## Updates
 

@@ -289,6 +289,15 @@ final class Engine {
         case .togglePause: DispatchQueue.main.async { Store.shared.paused.toggle() }
         case .toggleMagnet: DispatchQueue.main.async { Store.shared.settings.magnet.toggle() }
         case .quit: NSApp.terminate(nil)
+        case .appSwitcher:
+            // Hold ⌘ and press Tab once: the switcher opens on the previous app. R1 / L1 step
+            // while the button is held, and releasing it lets go of ⌘ to switch.
+            postKey(55, down: true, flags: .maskCommand)
+            postKey(48, down: true, flags: .maskCommand)
+            postKey(48, down: false, flags: .maskCommand)
+            switcherControl = control
+            previous["sw.l1"] = pad?.leftShoulder.isPressed ?? false
+            previous["sw.r1"] = pad?.rightShoulder.isPressed ?? false
         }
     }
 
@@ -307,6 +316,7 @@ final class Engine {
         case .delete:
             if repeatControl == control { repeatAction = nil; nextRepeat = nil }
         case .holdKey: holdKey(a, down: false)
+        case .appSwitcher: endSwitcher()
         default: break
         }
     }
@@ -316,7 +326,25 @@ final class Engine {
         release(a, from: nil)
     }
 
+    private var switcherControl: Control?
+
+    private func endSwitcher() {
+        guard switcherControl != nil else { return }
+        postKey(55, down: false, flags: [])
+        switcherControl = nil
+    }
+
+    /// One step in the open app switcher: Tab forward, ⇧Tab back, with ⌘ still held.
+    private func switcherStep(back: Bool) {
+        if back { postKey(56, down: true, flags: [.maskCommand, .maskShift]) }
+        let f: CGEventFlags = back ? [.maskCommand, .maskShift] : .maskCommand
+        postKey(48, down: true, flags: f)
+        postKey(48, down: false, flags: f)
+        if back { postKey(56, down: false, flags: .maskCommand) }
+    }
+
     private func releaseAll() {
+        endSwitcher()
         if leftHeld { mouse(.leftMouseUp, .left, at: pos); leftHeld = false }
         if rightHeld { mouse(.rightMouseUp, .right, at: pos); rightHeld = false }
         if middleHeld { mouse(.otherMouseUp, .center, at: pos); middleHeld = false }
@@ -362,7 +390,8 @@ final class Engine {
         let sx = shape(g.leftThumbstick.xAxis.value), sy = -shape(g.leftThumbstick.yAxis.value)
         let stickIdle = sx == 0 && sy == 0
         let l1 = g.leftShoulder.isPressed, r1 = g.rightShoulder.isPressed
-        let holdMode: StickMode = l1 ? settings.l1Hold : r1 ? settings.r1Hold : .none
+        let switching = switcherControl != nil
+        let holdMode: StickMode = switching ? .none : l1 ? settings.l1Hold : r1 ? settings.r1Hold : .none
 
         if holdMode != .none && !stickIdle {
             moveWindow(holdMode == .moveWindow ? .move : .resize, sx, sy)
@@ -370,8 +399,18 @@ final class Engine {
         } else {
             cursorStep(g, now: now)
         }
-        shoulder(.l1, l1, mode: settings.l1Hold)
-        shoulder(.r1, r1, mode: settings.r1Hold)
+        if switching {
+            // While the app switcher is open, L1 / R1 only step through it.
+            if edge("sw.l1", l1).down { switcherStep(back: true) }
+            if edge("sw.r1", r1).down { switcherStep(back: false) }
+            _ = edge(Control.l1.rawValue, l1)
+            _ = edge(Control.r1.rawValue, r1)
+            if l1 { shoulderUsed[.l1] = true }
+            if r1 { shoulderUsed[.r1] = true }
+        } else {
+            shoulder(.l1, l1, mode: settings.l1Hold)
+            shoulder(.r1, r1, mode: settings.r1Hold)
+        }
 
         for c in [Control.cross, .circle, .square, .triangle, .l3, .dpadUp, .dpadDown, .dpadLeft, .dpadRight, .options, .create] {
             handle(c, isPressed(c, g))
