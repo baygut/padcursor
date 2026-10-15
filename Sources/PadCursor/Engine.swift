@@ -373,7 +373,7 @@ final class Engine {
         shoulder(.l1, l1, mode: settings.l1Hold)
         shoulder(.r1, r1, mode: settings.r1Hold)
 
-        for c in [Control.cross, .circle, .square, .triangle, .l3, .r3, .dpadUp, .dpadDown, .dpadLeft, .dpadRight, .options, .create] {
+        for c in [Control.cross, .circle, .square, .triangle, .l3, .dpadUp, .dpadDown, .dpadLeft, .dpadRight, .options, .create] {
             handle(c, isPressed(c, g))
         }
 
@@ -404,7 +404,7 @@ final class Engine {
         case .touchpadPress: (g as? GCDualSenseGamepad)?.touchpadButton.isPressed ?? false
         case .options: g.buttonMenu.isPressed
         case .create: g.buttonOptions?.isPressed ?? false
-        case .swipeLeft, .swipeRight, .swipeUp, .swipeDown, .rightDoubleUp, .rightDoubleDown: false
+        case .swipeLeft, .swipeRight, .swipeUp, .swipeDown, .r3Up, .r3Down: false
         }
     }
 
@@ -453,42 +453,27 @@ final class Engine {
         invalidateButtons()
     }
 
-    // Right stick double flick: two quick up (or down) flicks within doubleFlickWindow.
-    private let doubleFlickWindow = 0.45
-    private var rFlickArmed = true
-    private var rRiseStart: Date?
-    private var rWasLow = true
-    private var lastRFlick: (up: Bool, at: Date)?
+    // R3 is both a button and a modifier: hold it and push the right stick up or down to jump
+    // to the top or bottom; a tap without pushing runs the R3 action (Spotlight by default).
+    private var r3Used = false
 
-    private func rightFlicks(_ g: GCExtendedGamepad, now: Date) {
+    /// Returns true while R3 is held, so the stick does not also scroll.
+    private func r3Gesture(_ g: GCExtendedGamepad) -> Bool {
+        let held = isPressed(.r3, g)
+        let e = edge(Control.r3.rawValue, held)
+        if e.down { r3Used = false }
+        if e.up && !r3Used { tap(settings.action(for: .r3)) }
+        guard held else { return false }
         let x = g.rightThumbstick.xAxis.value, y = g.rightThumbstick.yAxis.value
-        let raw = hypot(x, y)
-        if raw < flickLow {
-            rFlickArmed = true
-            rRiseStart = nil
-        } else if rWasLow {
-            rRiseStart = now
+        if !r3Used, abs(y) >= 0.5, abs(y) > abs(x) {
+            r3Used = true
+            tap(settings.action(for: y > 0 ? .r3Up : .r3Down))
         }
-        rWasLow = raw < flickLow
-        guard rFlickArmed, abs(y) >= flickHigh, abs(y) > abs(x) * 2,
-              let rs = rRiseStart, now.timeIntervalSince(rs) <= flickRise * 1.5 else {
-            if rFlickArmed, raw >= flickLow, let rs = rRiseStart, now.timeIntervalSince(rs) > flickRise * 1.5 {
-                rFlickArmed = false   // a slow push is plain scrolling
-            }
-            return
-        }
-        rFlickArmed = false
-        let up = y > 0
-        if let last = lastRFlick, last.up == up, now.timeIntervalSince(last.at) <= doubleFlickWindow {
-            lastRFlick = nil
-            tap(settings.action(for: up ? .rightDoubleUp : .rightDoubleDown))
-        } else {
-            lastRFlick = (up, now)
-        }
+        return true
     }
 
     private func scroll(_ g: GCExtendedGamepad, now: Date) {
-        rightFlicks(g, now: now)
+        if r3Gesture(g) { scrollSince = nil; return }
         let vy = shape(g.rightThumbstick.yAxis.value), vx = shape(g.rightThumbstick.xAxis.value)
         if vx == 0 && vy == 0 {
             scrollSince = nil

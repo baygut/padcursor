@@ -7,7 +7,7 @@ enum Control: String, CaseIterable, Codable, Identifiable {
     case l1, r1, l3, r3
     case dpadUp, dpadDown, dpadLeft, dpadRight
     case touchpadPress, swipeLeft, swipeRight, swipeUp, swipeDown
-    case rightDoubleUp, rightDoubleDown
+    case r3Up, r3Down
     case options, create
 
     var id: String { rawValue }
@@ -21,7 +21,7 @@ enum Control: String, CaseIterable, Codable, Identifiable {
         case .l1: "L1 (tap)"
         case .r1: "R1 (tap)"
         case .l3: "L3 (press left stick)"
-        case .r3: "R3 (press right stick)"
+        case .r3: "R3 (tap the right stick in)"
         case .dpadUp: "D-pad up"
         case .dpadDown: "D-pad down"
         case .dpadLeft: "D-pad left"
@@ -31,8 +31,8 @@ enum Control: String, CaseIterable, Codable, Identifiable {
         case .swipeRight: "Touchpad swipe right"
         case .swipeUp: "Touchpad swipe up"
         case .swipeDown: "Touchpad swipe down"
-        case .rightDoubleUp: "Right stick double flick up"
-        case .rightDoubleDown: "Right stick double flick down"
+        case .r3Up: "R3 hold + push up"
+        case .r3Down: "R3 hold + push down"
         case .options: "Options"
         case .create: "Create"
         }
@@ -152,8 +152,8 @@ struct Settings: Codable, Equatable {
         .swipeRight: .of(.previousSpace),
         .swipeUp: .of(.missionControl),
         .swipeDown: .of(.appExpose),
-        .rightDoubleUp: .of(.scrollToTop),
-        .rightDoubleDown: .of(.scrollToBottom),
+        .r3Up: .of(.scrollToTop),
+        .r3Down: .of(.scrollToBottom),
         .options: .of(.toggleMagnet),
         .create: .of(.quit),
     ])

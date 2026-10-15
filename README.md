@@ -26,13 +26,13 @@ Requires macOS 13 or later on Apple silicon.
 | R2 / L2 | Hold for faster / more precise movement |
 | Left stick flick | On a button: jump to the next button in that direction |
 | Right stick | Scroll; keep holding it to scroll faster |
-| Right stick double flick up / down | Jump to the top / bottom of the page |
+| R3 hold + right stick up / down | Jump to the top / bottom of the page |
 | ✕ Cross | Left click (hold to drag, double-tap to double-click) |
 | ○ Circle | Right click |
 | □ Square | Delete (repeats while held) |
 | △ Triangle | Pause / resume |
 | L3 | Middle click |
-| R3 | Spotlight (⌘Space) |
+| R3 tap | Spotlight (⌘Space) |
 | D-pad | Arrow keys |
 | L1 tap / hold + left stick | Back (⌘[) / move the window under the cursor |
 | R1 tap / hold + left stick | Forward (⌘]) / resize the window under the cursor |
